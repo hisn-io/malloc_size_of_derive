@@ -164,7 +164,6 @@ fn test_with_function() {
     let source = synstructure::Structure::new(&source);
 
     let expanded = malloc_size_of_derive(source).to_string();
-    println!("Expanded:\n-----\n{}\n-----",expanded);
 
     let mut no_space = expanded.replace(" ", "");
     macro_rules! match_count {
@@ -183,10 +182,4 @@ fn test_with_function() {
     match_count!("impl::malloc_size_of::MallocSizeOf for Foo {", 1);
     match_count!("sum += ::malloc_size_of::MallocSizeOf::size_of(", 1);
     match_count!("sum += custom_func(", 1);
-
-    let source = syn::parse_str("struct Bar([Baz; 3]);").unwrap();
-    let source = synstructure::Structure::new(&source);
-    let expanded = malloc_size_of_derive(source).to_string();
-    no_space = expanded.replace(" ", "");
-    match_count!("for item in", 1);
 }
