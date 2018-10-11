@@ -14,7 +14,7 @@ extern crate syn;
 extern crate synstructure;
 
 #[cfg(not(test))]
-decl_derive!([MallocSizeOf, attributes(ignore_malloc_size_of)] => malloc_size_of_derive);
+decl_derive!([MallocSizeOf, attributes(ignore_malloc_size_of, with)] => malloc_size_of_derive);
 
 fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
     let match_body = s.each(|binding| {
@@ -38,8 +38,39 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
                 },
                 _ => false,
             });
+        let with_function : Option<String> = binding
+            .ast()
+            .attrs
+            .iter()
+            .filter_map(|attr| match attr.interpret_meta().unwrap() {
+                syn::Meta::Word(ref ident) | syn::Meta::List(syn::MetaList { ref ident, .. })
+                    if ident == "with" =>
+                {
+                    panic!(
+                        "#[with] must have a function name as argument, \
+                         e.g. #[with = \"util::measure_btreemap\"]"
+                    );
+                }
+                syn::Meta::NameValue(syn::MetaNameValue { ref ident, ref lit, .. })
+                    if ident == "with"  =>
+                {
+                    if let syn::Lit::Str(ref lit) = lit {
+                        Some(lit.value())
+                    } else {
+                        panic!(
+                        "#[with] must have a function name as argument and this must be a string, \
+                         e.g. #[with = \"util::measure_btreemap\"]"
+                    );
+                    }
+                },
+                _ => None,
+            })
+            .map(|lit| lit.to_string())
+            .next();
         if ignore {
             None
+        } else if let Some(with_function) = with_function {
+            unimplemented!()
         } else if let syn::Type::Array(..) = binding.ast().ty {
             Some(quote! {
                 for item in #binding.iter() {
