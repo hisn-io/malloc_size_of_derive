@@ -38,7 +38,7 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
                 },
                 _ => false,
             });
-        let with_function : Option<syn::LitStr> = binding
+        let with_function : Option<syn::Path> = binding
             .ast()
             .attrs
             .iter()
@@ -55,7 +55,14 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
                     if ident == "with_malloc_size_of_func"  =>
                 {
                     if let syn::Lit::Str(ref lit) = lit {
-                        Some(lit.clone())
+                        // try to interpret the string as path
+                        let as_path = lit.parse::<syn::Path>();
+                        match as_path {
+                            Ok(as_path) => Some(as_path),
+                            Err(_err) => {
+                                panic!("The argument of #[with_malloc_size_of_func = \"...\"] must be the path to a function which is in scope.");
+                            }
+                        }
                     } else {
                         panic!(
                         "#[with_malloc_size_of_func] must have a function name as argument and this must be a string, \
@@ -69,8 +76,6 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
         if ignore {
             None
         } else if let Some(with_function) = with_function {
-            // convert the string literal to a identifier
-            let with_function = syn::Ident::new(&with_function.value(), with_function.span());
             Some(quote! {
                 sum += #with_function(#binding, ops);
             })
@@ -158,7 +163,9 @@ fn test_no_reason() {
 #[test]
 fn test_with_function() {
     let source = syn::parse_str(
-        "struct Foo { bar: Bar, #[with_malloc_size_of_func = \"custom_func\"] baz: Baz}",
+        "struct Foo { bar: Bar, #[with_malloc_size_of_func = \"col::anothermod::custom_func\"] baz: Baz,
+        #[with_malloc_size_of_func = \"my_func\"] 
+        baz2: Baz}",
     ).unwrap();
 
     let source = synstructure::Structure::new(&source);
@@ -181,5 +188,6 @@ fn test_with_function() {
     match_count!("ignore_malloc_size_of", 0);
     match_count!("impl::malloc_size_of::MallocSizeOf for Foo {", 1);
     match_count!("sum += ::malloc_size_of::MallocSizeOf::size_of(", 1);
-    match_count!("sum += custom_func(", 1);
+    match_count!("sum += col::anothermod::custom_func(", 1);
+    match_count!("sum += my_func(", 1);
 }
