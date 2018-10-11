@@ -1,6 +1,6 @@
 [![Documentation link](https://docs.rs/graphannis-malloc_size_of/badge.svg)](https://docs.rs/graphannis-malloc_size_of/)
-/ Build status:  [![Build Status Linux & MacOS](https://travis-ci.org/corpus-tools/graphannis-malloc_size_of.svg?branch=develop)](https://travis-ci.org/corpus-tools/graphannis-malloc_size_of) (Linux & MacOS)
-[![Build status Windows](https://ci.appveyor.com/api/projects/status/2gsjtakjpnpjvlnp/branch/develop?svg=true)](https://ci.appveyor.com/project/thomaskrause/graphannis-malloc-size-of/branch/develop) (Windows)
+/ Build status:  [![Build Status Linux & MacOS](https://travis-ci.org/corpus-tools/graphannis-malloc_size_of_derive.svg?branch=develop)](https://travis-ci.org/corpus-tools/graphannis-malloc_size_of_derive) (Linux & MacOS)
+[![Build status Windows](https://ci.appveyor.com/api/projects/status/c3ymyx1yb7crm2qp/branch/develop?svg=true)](https://ci.appveyor.com/project/thomaskrause/graphannis-malloc-size-of_derive/branch/develop) (Windows)
 
 # graphannis-malloc_size_of_derive
 
