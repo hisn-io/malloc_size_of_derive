@@ -165,7 +165,7 @@ fn test_with_function() {
 
     let expanded = malloc_size_of_derive(source).to_string();
 
-    let mut no_space = expanded.replace(" ", "");
+    let no_space = expanded.replace(" ", "");
     macro_rules! match_count {
         ($e: expr, $count: expr) => {
             assert_eq!(
