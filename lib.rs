@@ -14,7 +14,7 @@ extern crate syn;
 extern crate synstructure;
 
 #[cfg(not(test))]
-decl_derive!([MallocSizeOf, attributes(ignore_malloc_size_of, with)] => malloc_size_of_derive);
+decl_derive!([MallocSizeOf, attributes(ignore_malloc_size_of, with_malloc_size_of_func)] => malloc_size_of_derive);
 
 fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
     let match_body = s.each(|binding| {
@@ -38,39 +38,42 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> quote::Tokens {
                 },
                 _ => false,
             });
-        let with_function : Option<String> = binding
+        let with_function : Option<syn::LitStr> = binding
             .ast()
             .attrs
             .iter()
             .filter_map(|attr| match attr.interpret_meta().unwrap() {
                 syn::Meta::Word(ref ident) | syn::Meta::List(syn::MetaList { ref ident, .. })
-                    if ident == "with" =>
+                    if ident == "with_malloc_size_of_func" =>
                 {
                     panic!(
-                        "#[with] must have a function name as argument, \
-                         e.g. #[with = \"util::measure_btreemap\"]"
+                        "#[with_malloc_size_of_func] must have a function name as argument, \
+                         e.g. #[with_malloc_size_of_func = \"util::measure_btreemap\"]"
                     );
                 }
                 syn::Meta::NameValue(syn::MetaNameValue { ref ident, ref lit, .. })
-                    if ident == "with"  =>
+                    if ident == "with_malloc_size_of_func"  =>
                 {
                     if let syn::Lit::Str(ref lit) = lit {
-                        Some(lit.value())
+                        Some(lit.clone())
                     } else {
                         panic!(
-                        "#[with] must have a function name as argument and this must be a string, \
-                         e.g. #[with = \"util::measure_btreemap\"]"
+                        "#[with_malloc_size_of_func] must have a function name as argument and this must be a string, \
+                         e.g. #[with_malloc_size_of_func = \"util::measure_btreemap\"]"
                     );
                     }
                 },
                 _ => None,
             })
-            .map(|lit| lit.to_string())
             .next();
         if ignore {
             None
         } else if let Some(with_function) = with_function {
-            unimplemented!()
+            // convert the string literal to a identifier
+            let with_function = syn::Ident::new(&with_function.value(), with_function.span());
+            Some(quote! {
+                sum += #with_function(#binding, ops);
+            })
         } else if let syn::Type::Array(..) = binding.ast().ty {
             Some(quote! {
                 for item in #binding.iter() {
@@ -149,4 +152,41 @@ fn test_struct() {
 fn test_no_reason() {
     let input = syn::parse_str("struct A { #[ignore_malloc_size_of] b: C }").unwrap();
     malloc_size_of_derive(synstructure::Structure::new(&input));
+}
+
+
+#[test]
+fn test_with_function() {
+    let source = syn::parse_str(
+        "struct Foo { bar: Bar, #[with_malloc_size_of_func = \"custom_func\"] baz: Baz}",
+    ).unwrap();
+
+    let source = synstructure::Structure::new(&source);
+
+    let expanded = malloc_size_of_derive(source).to_string();
+    println!("Expanded:\n-----\n{}\n-----",expanded);
+
+    let mut no_space = expanded.replace(" ", "");
+    macro_rules! match_count {
+        ($e: expr, $count: expr) => {
+            assert_eq!(
+                no_space.matches(&$e.replace(" ", "")).count(),
+                $count,
+                "counting occurences of {:?} in {:?} (whitespace-insensitive)",
+                $e,
+                expanded
+            )
+        };
+    }
+    match_count!("struct", 0);
+    match_count!("ignore_malloc_size_of", 0);
+    match_count!("impl::malloc_size_of::MallocSizeOf for Foo {", 1);
+    match_count!("sum += ::malloc_size_of::MallocSizeOf::size_of(", 1);
+    match_count!("sum += custom_func(", 1);
+
+    let source = syn::parse_str("struct Bar([Baz; 3]);").unwrap();
+    let source = synstructure::Structure::new(&source);
+    let expanded = malloc_size_of_derive(source).to_string();
+    no_space = expanded.replace(" ", "");
+    match_count!("for item in", 1);
 }
