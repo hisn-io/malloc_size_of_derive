@@ -13,12 +13,12 @@ extern crate syn;
 #[macro_use]
 extern crate synstructure;
 
-extern crate proc_macro;
+extern crate proc_macro2;
 
 #[cfg(not(test))]
 decl_derive!([MallocSizeOf, attributes(ignore_malloc_size_of, with_malloc_size_of_func)] => malloc_size_of_derive);
 
-fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro::TokenStream {
+fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let match_body = s.each(|binding| {
         let ignore = binding
             .ast()
@@ -119,7 +119,7 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro::TokenStream 
         }
     };
 
-    tokens.into()
+    tokens
 }
 
 #[test]
