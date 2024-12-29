@@ -1,7 +1,7 @@
 // Copyright 2016-2017 The Servo Project Developers.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> 
+// http://www.apache.org/licenses/LICENSE-2.0>
 // This file may not be copied, modified, or distributed
 // except according to those terms.
 
@@ -126,7 +126,8 @@ fn malloc_size_of_derive(s: synstructure::Structure) -> proc_macro2::TokenStream
 fn test_struct() {
     let source = syn::parse_str(
         "struct Foo<T> { bar: Bar, baz: T, #[ignore_malloc_size_of = \"\"] z: Arc<T> }",
-    ).unwrap();
+    )
+    .unwrap();
     let source = synstructure::Structure::new(&source);
 
     let expanded = malloc_size_of_derive(source).to_string();
@@ -160,7 +161,6 @@ fn test_no_reason() {
     let input = syn::parse_str("struct A { #[ignore_malloc_size_of] b: C }").unwrap();
     malloc_size_of_derive(synstructure::Structure::new(&input));
 }
-
 
 #[test]
 fn test_with_function() {
